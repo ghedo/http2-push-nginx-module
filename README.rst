@@ -1,0 +1,50 @@
+http2-push-nginx-module
+=======================
+
+.. image:: https://travis-ci.org/ghedo/http2-push-nginx-module.png
+  :target: https://travis-ci.org/ghedo/http2-push-nginx-module
+
+http2-push-nginx-module_ is an *experimental* and *extremely unstable* NGINX
+module that implements HTTP/2 server push.
+
+.. _http2-push-nginx-module: https://ghedo.github.io/http2-push-nginx-module
+
+TODO
+----
+
+* Honour MAX_CONCURRENT_STREAMS setting from clients
+* Prevent duplicate per-connection pushes
+* Clean-up
+* Write tests (basic, 304 response, CONTINUATION, ...)
+* Write example to parse Link headers (in Lua)
+
+Building
+--------
+
+http2-push-nginx-module is distributed as source code. Build with:
+
+.. code-block:: bash
+
+   # download and unpack NGINX sources
+   $ wget 'http://nginx.org/download/nginx-1.11.2.tar.gz'
+   $ tar -xzvf nginx-1.11.2.tar.gz
+   $ cd nginx-1.11.2/
+
+   # apply required patch to NGINX
+   $ patch -p01 < /path/to/http2-push-nginx-module/patches/nginx_1.11.12_http2_server_push.patch
+
+   # configure and build NGINX
+   $ ./configure --prefix=/opt/nginx \
+         --with-http_ssl_module \
+         --with-http_v2_module \
+         --add-module=/path/to/http2-push-nginx-module
+   $ make
+
+Copyright
+---------
+
+Copyright (C) 2017 Alessandro Ghedini <alessandro@ghedini.me>
+
+See COPYING_ for the license.
+
+.. _COPYING: https://github.com/ghedo/http2-push-nginx-module/tree/master/COPYING
