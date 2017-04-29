@@ -737,9 +737,10 @@ ngx_http_v2_push_header_filter(ngx_http_request_t *r)
     conf = ngx_http_get_module_loc_conf(r, ngx_http_v2_push_module);
 
     if (conf->paths) {
-        ngx_str_t *p = conf->paths->elts;
+        size_t      i;
+        ngx_str_t  *p = conf->paths->elts;
 
-        for (size_t i = 0; i < conf->paths->nelts; i++) {
+        for (i = 0; i < conf->paths->nelts; i++) {
             ngx_http_v2_push(r, p[i].data, p[i].len);
         }
     }
