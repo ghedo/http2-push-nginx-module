@@ -1,0 +1,32 @@
+language: c
+
+sudo: false
+
+os:
+ - linux
+
+addons:
+ apt:
+  packages:
+   - clang-3.9
+   - gcc-6
+  sources:
+   - llvm-toolchain-trusty-3.9
+   - ubuntu-toolchain-r-test
+
+compiler:
+ - clang
+ - clang-3.9
+ - gcc
+ - gcc-6
+
+env:
+ - NGINX_VERSION=1.11.12
+
+script:
+ - wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz"
+ - tar -xzvf "nginx-${NGINX_VERSION}.tar.gz"
+ - cd "nginx-${NGINX_VERSION}/"
+ - patch -p01 < "../patches/nginx_${NGINX_VERSION}_http2_server_push.patch"
+ - ./configure --with-http_ssl_module --with-http_v2_module --add-module=..
+ - make
