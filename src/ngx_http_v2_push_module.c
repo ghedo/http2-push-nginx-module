@@ -336,8 +336,6 @@ ngx_http_v2_push_promise_frame_handler(ngx_http_v2_connection_t *h2c,
 }
 
 
-
-
 static ngx_http_v2_out_frame_t *
 ngx_http_v2_create_push_promise_frame(ngx_http_request_t *r, u_char *pos,
     u_char *end, ngx_uint_t promised_sid)
