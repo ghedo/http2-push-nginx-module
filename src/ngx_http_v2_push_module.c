@@ -457,7 +457,7 @@ ngx_http_v2_create_push_promise_frame(ngx_http_request_t *r, u_char *pos,
 
 
 static ngx_int_t
-ngx_http_v2_header_filter_promise(ngx_http_request_t *r,
+ngx_http_v2_push_queue_promise(ngx_http_request_t *r,
     ngx_http_v2_stream_t *pushed)
 {
     u_char                    *pos, *start, *tmp;
@@ -748,7 +748,7 @@ ngx_http_v2_push_header_filter(ngx_http_request_t *r)
 
         push = ngx_queue_data(q, ngx_http_v2_stream_t, queue);
 
-        ngx_http_v2_header_filter_promise(r, push);
+        ngx_http_v2_push_queue_promise(r, push);
     }
 
 done:
