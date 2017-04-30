@@ -1,5 +1,5 @@
 diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
-index 55db58e7..23d4fdc6 100644
+index f3050f1d..88d6dd2c 100644
 --- a/src/http/v2/ngx_http_v2.c
 +++ b/src/http/v2/ngx_http_v2.c
 @@ -40,6 +40,7 @@
@@ -20,7 +20,7 @@ index 55db58e7..23d4fdc6 100644
      h2scf = ngx_http_get_module_srv_conf(hc->conf_ctx, ngx_http_v2_module);
  
      h2c->pool = ngx_create_pool(h2scf->pool_size, h2c->connection->log);
-@@ -2034,6 +2038,19 @@ ngx_http_v2_state_settings_params(ngx_http_v2_connection_t *h2c, u_char *pos,
+@@ -2029,6 +2033,19 @@ ngx_http_v2_state_settings_params(ngx_http_v2_connection_t *h2c, u_char *pos,
              h2c->frame_size = value;
              break;
  
@@ -41,7 +41,7 @@ index 55db58e7..23d4fdc6 100644
              break;
          }
 diff --git a/src/http/v2/ngx_http_v2.h b/src/http/v2/ngx_http_v2.h
-index 7d2a2ea0..57a42734 100644
+index cddfccd2..fbb77025 100644
 --- a/src/http/v2/ngx_http_v2.h
 +++ b/src/http/v2/ngx_http_v2.h
 @@ -141,11 +141,13 @@ struct ngx_http_v2_connection_s {
