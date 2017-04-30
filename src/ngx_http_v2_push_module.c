@@ -568,21 +568,25 @@ ngx_http_v2_push_handler(ngx_event_t *ev)
 
 
 static ngx_int_t
-ngx_http_v2_push_populate_header(ngx_http_request_t *r, ngx_table_elt_t *host)
+ngx_http_v2_push_copy_header(ngx_http_request_t *r, ngx_table_elt_t *hdr)
 {
     ngx_table_elt_t            *h;
     ngx_http_header_t          *hh;
     ngx_http_core_main_conf_t  *cmcf;
+
+    if (hdr == NULL) {
+        return NGX_OK;
+    }
 
     h = ngx_list_push(&r->headers_in.headers);
     if (h == NULL) {
         return NGX_ERROR;
     }
 
-    h->hash        = host->hash;
-    h->key         = host->key;
-    h->value       = host->value;
-    h->lowcase_key = host->lowcase_key;
+    h->hash        = hdr->hash;
+    h->key         = hdr->key;
+    h->value       = hdr->value;
+    h->lowcase_key = hdr->lowcase_key;
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
@@ -681,16 +685,16 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
         goto error;
     }
 
-    if (ngx_http_v2_push_populate_header(pr, r->headers_in.host) != NGX_OK) {
+    if (ngx_http_v2_push_copy_header(pr, r->headers_in.host) != NGX_OK) {
         goto error;
     }
 
-    if (ngx_http_v2_push_populate_header(pr, r->headers_in.accept_encoding)
+    if (ngx_http_v2_push_copy_header(pr, r->headers_in.accept_encoding)
          != NGX_OK) {
         goto error;
     }
 
-    if (ngx_http_v2_push_populate_header(pr, r->headers_in.user_agent)
+    if (ngx_http_v2_push_copy_header(pr, r->headers_in.user_agent)
          != NGX_OK) {
         goto error;
     }
