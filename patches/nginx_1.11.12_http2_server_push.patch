@@ -41,14 +41,24 @@ index f3050f1d..88d6dd2c 100644
              break;
          }
 diff --git a/src/http/v2/ngx_http_v2.h b/src/http/v2/ngx_http_v2.h
-index cddfccd2..fbb77025 100644
+index cddfccd2..1b405f69 100644
 --- a/src/http/v2/ngx_http_v2.h
 +++ b/src/http/v2/ngx_http_v2.h
-@@ -141,11 +141,13 @@ struct ngx_http_v2_connection_s {
+@@ -12,6 +12,7 @@
+ #include <ngx_core.h>
+ #include <ngx_http.h>
+ 
++typedef struct ngx_http_v2_push_state ngx_http_v2_push_state_t;
+ 
+ #define NGX_HTTP_V2_ALPN_ADVERTISE       "\x02h2"
+ #define NGX_HTTP_V2_NPN_ADVERTISE        NGX_HTTP_V2_ALPN_ADVERTISE
+@@ -141,11 +142,15 @@ struct ngx_http_v2_connection_s {
      ngx_queue_t                      closed;
  
      ngx_uint_t                       last_sid;
 +    ngx_uint_t                       next_sid;
++
++    ngx_http_v2_push_state_t        *push_state;
  
      unsigned                         closed_nodes:8;
      unsigned                         settings_ack:1;
