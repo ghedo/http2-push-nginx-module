@@ -7,6 +7,10 @@
 #ifndef _NGX_HTTP_V2_PUSH_H_INCLUDED_
 #define _NGX_HTTP_V2_PUSH_H_INCLUDED_
 
+struct ngx_http_v2_push_state {
+    ngx_array_t  *already_pushed;
+};
+
 #define ngx_http_v2_indexed(i)      (128 + (i))
 
 #define NGX_HTTP_V2_ENCODE_RAW            0

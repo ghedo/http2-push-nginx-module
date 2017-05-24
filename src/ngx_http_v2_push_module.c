@@ -32,6 +32,11 @@ typedef struct {
     ngx_queue_t   pushes;
 } ngx_http_v2_push_ctx_t;
 
+typedef struct {
+    ngx_str_t     path;
+    ngx_uint_t    hash;
+} ngx_http_v2_push_path_t;
+
 
 static ngx_int_t ngx_http_v2_push_add_variables(ngx_conf_t *cf);
 static ngx_int_t ngx_http_v2_push_variable(ngx_http_request_t *r,
@@ -610,6 +615,83 @@ ngx_http_v2_push_copy_header(ngx_http_request_t *r, ngx_table_elt_t *hdr)
 
 
 static ngx_int_t
+ngx_http_v2_push_already_pushed(ngx_http_v2_connection_t *h2c,
+    u_char *u_str, size_t u_len)
+{
+    size_t                    i;
+    ngx_http_v2_push_state_t *push_state;
+    ngx_http_v2_push_path_t  *elt;
+    ngx_uint_t                u_hash;
+
+    u_hash = ngx_hash_key(u_str, u_len);
+    push_state = h2c->push_state;
+
+    if (push_state == NULL) {
+        return NGX_OK;
+    }
+
+    for (i = 0; i < push_state->already_pushed->nelts; i++) {
+        elt = (ngx_http_v2_push_path_t *) push_state->already_pushed->elts + i;
+
+        if (u_hash != elt->hash) {
+            continue;
+        }
+
+        if (u_len != elt->path.len) {
+            continue;
+        }
+
+        if (ngx_strncmp(u_str, elt->path.data, u_len) == 0) {
+            return NGX_DECLINED;
+        }
+    }
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_v2_push_mark_as_pushed(ngx_http_v2_connection_t *h2c,
+    u_char *u_str, size_t u_len)
+{
+    ngx_http_v2_push_path_t  *pushed;
+    u_char                   *tmp;
+
+    if (h2c->push_state == NULL) {
+        h2c->push_state = ngx_pcalloc(h2c->pool,
+                                      sizeof(ngx_http_v2_push_state_t));
+
+        if (h2c->push_state == NULL) {
+            return;
+        }
+
+        h2c->push_state->already_pushed =
+            ngx_array_create(h2c->pool, 10, sizeof(ngx_http_v2_push_path_t));
+        if (h2c->push_state->already_pushed == NULL) {
+            return;
+        }
+    }
+
+    /* allocate str buf first so that array is not modified if this fails */
+    tmp = ngx_pcalloc(h2c->pool, u_len);
+    if (tmp == NULL) {
+        return;
+    }
+
+    pushed = ngx_array_push(h2c->push_state->already_pushed);
+    if (pushed == NULL) {
+        return;
+    }
+
+    pushed->path.len = u_len;
+    pushed->path.data = tmp;
+    pushed->hash = ngx_hash_key(u_str, u_len);
+
+    ngx_memcpy(pushed->path.data, u_str, u_len);
+}
+
+
+static ngx_int_t
 ngx_http_v2_push_populate_path(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 {
     r->uri_start = u_str;
@@ -643,6 +725,10 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     if (!h2c->enable_push || !h2pscf->enable) {
         return NGX_DECLINED;
+    }
+
+    if (ngx_http_v2_push_already_pushed(h2c, u_str, u_len)) {
+        return NGX_OK;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_v2_push_module);
@@ -703,6 +789,8 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     stream->node = node;
 
     node->stream = stream;
+
+    ngx_http_v2_push_mark_as_pushed(h2c, u_str, u_len);
 
     ngx_queue_insert_tail(&ctx->pushes, &stream->queue);
 
