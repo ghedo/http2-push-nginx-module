@@ -9,14 +9,28 @@ module that implements HTTP/2 server push.
 
 .. _http2-push-nginx-module: https://ghedo.github.io/http2-push-nginx-module
 
-TODO
-----
+Configuration
+-------------
 
-* Honour MAX_CONCURRENT_STREAMS setting from clients
-* Prevent duplicate per-connection pushes
-* Clean-up
-* Write tests (basic, 304 response, CONTINUATION, ...)
-* Write example to parse Link headers (in Lua)
+http2_server_push
+~~~~~~~~~~~~~~~~~
+
+**syntax:** *http2_server_push on | off*
+
+**default:** *http2_server_push off*
+
+**context:** *http, server*
+
+Specifies whether to enable HTTP/2 server push.
+
+http2_push_path
+~~~~~~~~~~~~~~~
+
+**syntax:** *http2_push_path <url>*
+
+**context:** *http, server, location*
+
+Specifies a resource that should be pushed.
 
 Building
 --------
@@ -39,6 +53,15 @@ http2-push-nginx-module is distributed as source code. Build with:
          --with-http_v2_module \
          --add-module=/path/to/http2-push-nginx-module
    $ make
+
+TODO
+----
+
+* Honour MAX_CONCURRENT_STREAMS setting from clients
+* Prevent duplicate per-connection pushes
+* Clean-up
+* Write tests (basic, 304 response, CONTINUATION, ...)
+* Write example to parse Link headers (in Lua)
 
 Copyright
 ---------
