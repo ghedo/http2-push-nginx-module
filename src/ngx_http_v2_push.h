@@ -4,6 +4,8 @@
  * Copyright (C) Valentin V. Bartenev
  */
 
+#ifndef _NGX_HTTP_V2_PUSH_H_INCLUDED_
+#define _NGX_HTTP_V2_PUSH_H_INCLUDED_
 
 #define ngx_http_v2_indexed(i)      (128 + (i))
 
@@ -29,3 +31,5 @@ ngx_http_v2_node_t *ngx_http_v2_get_node_by_id(
     ngx_http_v2_connection_t *h2c, ngx_uint_t sid, ngx_uint_t alloc);
 
 void ngx_http_v2_run_request(ngx_http_request_t *r);
+
+#endif /* _NGX_HTTP_V2_PUSH_H_INCLUDED_ */
