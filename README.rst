@@ -32,6 +32,17 @@ http2_push_path
 
 Specifies a resource that should be pushed.
 
+http2_max_pushed_streams
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**syntax:** *http2_max_pushed_streams <number>*
+
+**default:** *http2_max_pushed_streams 100*
+
+**context:** *http, server*
+
+Specifies the maximum number of resources that will be pushed on a connection.
+
 Building
 --------
 
