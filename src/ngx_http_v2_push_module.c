@@ -21,7 +21,7 @@
 
 typedef struct {
     ngx_flag_t    enable;
-    ngx_uint_t    pushed_streams;
+    ngx_uint_t    max_pushed_streams;
 } ngx_http_v2_push_srv_conf_t;
 
 typedef struct {
@@ -72,10 +72,10 @@ static ngx_command_t  ngx_http_v2_push_commands[] = {
       NULL },
 
     { ngx_string("http2_max_pushed_streams"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_FLAG,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_SRV_CONF_OFFSET,
-      offsetof(ngx_http_v2_push_srv_conf_t, pushed_streams),
+      offsetof(ngx_http_v2_push_srv_conf_t, max_pushed_streams),
       NULL },
 
     { ngx_string("http2_push_path"),
@@ -198,6 +198,7 @@ ngx_http_v2_push_create_srv_conf(ngx_conf_t *cf)
     }
 
     h2pscf->enable = NGX_CONF_UNSET;
+    h2pscf->max_pushed_streams = NGX_CONF_UNSET;
 
     return h2pscf;
 }
@@ -210,6 +211,7 @@ ngx_http_v2_push_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_v2_push_srv_conf_t *conf = child;
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
+    ngx_conf_merge_uint_value(conf->max_pushed_streams, prev->max_pushed_streams, 100);
 
     return NGX_CONF_OK;
 }
@@ -692,6 +694,19 @@ ngx_http_v2_push_mark_as_pushed(ngx_http_v2_connection_t *h2c,
 
 
 static ngx_int_t
+ngx_http_v2_push_above_max_pushes(ngx_http_v2_push_srv_conf_t *h2pscf,
+    ngx_http_v2_connection_t *h2c)
+{
+
+    if (h2c->push_state == NULL) {
+        return NGX_OK;
+    }
+
+    return h2c->push_state->already_pushed->nelts >= h2pscf->max_pushed_streams;
+}
+
+
+static ngx_int_t
 ngx_http_v2_push_populate_path(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 {
     r->uri_start = u_str;
@@ -729,6 +744,10 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     if (ngx_http_v2_push_already_pushed(h2c, u_str, u_len)) {
         return NGX_OK;
+    }
+
+    if (ngx_http_v2_push_above_max_pushes(h2pscf, h2c)) {
+        return NGX_DECLINED;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_v2_push_module);
