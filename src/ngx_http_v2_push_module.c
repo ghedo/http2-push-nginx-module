@@ -743,7 +743,7 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     }
 
     if (ngx_http_v2_push_already_pushed(h2c, u_str, u_len)) {
-        return NGX_OK;
+        return NGX_DONE;
     }
 
     if (ngx_http_v2_push_above_max_pushes(h2pscf, h2c)) {
