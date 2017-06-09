@@ -501,13 +501,13 @@ ngx_http_v2_push_queue_promise(ngx_http_request_t *r,
     start = pos;
 
     *pos++ = NGX_HTTP_V2_AUTHORITY_INDEX;
-    pos = ngx_http_v2_write_value(pos, pr->headers_in.host->value.data,
+    pos = ngx_http_v2_push_write_value(pos, pr->headers_in.host->value.data,
                                   pr->headers_in.host->value.len, tmp);
 
     *pos++ = ngx_http_v2_indexed(NGX_HTTP_V2_METHOD_GET_INDEX);
 
     *pos++ = NGX_HTTP_V2_PATH_INDEX;
-    pos = ngx_http_v2_write_value(pos, pr->uri.data, pr->uri.len, tmp);
+    pos = ngx_http_v2_push_write_value(pos, pr->uri.data, pr->uri.len, tmp);
 
     if (!ngx_strncmp(pr->schema_start, "http", 5)) {
         *pos++ = ngx_http_v2_indexed(NGX_HTTP_V2_SCHEME_HTTP_INDEX);
@@ -518,12 +518,12 @@ ngx_http_v2_push_queue_promise(ngx_http_request_t *r,
     if (pr->headers_in.accept_encoding) {
         *pos++ = 0;
 
-        pos = ngx_http_v2_write_name(pos,
+        pos = ngx_http_v2_push_write_name(pos,
                                      pr->headers_in.accept_encoding->key.data,
                                      pr->headers_in.accept_encoding->key.len,
                                      tmp);
 
-        pos = ngx_http_v2_write_value(pos,
+        pos = ngx_http_v2_push_write_value(pos,
                                      pr->headers_in.accept_encoding->value.data,
                                      pr->headers_in.accept_encoding->value.len,
                                      tmp);
@@ -532,12 +532,12 @@ ngx_http_v2_push_queue_promise(ngx_http_request_t *r,
     if (pr->headers_in.user_agent) {
         *pos++ = 0;
 
-        pos = ngx_http_v2_write_name(pos,
+        pos = ngx_http_v2_push_write_name(pos,
                                      pr->headers_in.user_agent->key.data,
                                      pr->headers_in.user_agent->key.len,
                                      tmp);
 
-        pos = ngx_http_v2_write_value(pos,
+        pos = ngx_http_v2_push_write_value(pos,
                                      pr->headers_in.user_agent->value.data,
                                      pr->headers_in.user_agent->value.len,
                                      tmp);
@@ -758,7 +758,7 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
         }
     }
 
-    node = ngx_http_v2_get_node_by_id(h2c, h2c->next_sid, 1);
+    node = ngx_http_v2_push_get_node_by_id(h2c, h2c->next_sid, 1);
 
     if (node == NULL) {
         goto error;

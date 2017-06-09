@@ -18,11 +18,11 @@
 
 static ngx_http_v2_node_t *ngx_http_v2_get_closed_node(
     ngx_http_v2_connection_t *h2c);
-#define ngx_http_v2_index(h2scf, sid)  ((sid >> 1) & h2scf->streams_index_mask)
+#define ngx_http_v2_push_index(h2scf, sid)  ((sid >> 1) & h2scf->streams_index_mask)
 
 
 static u_char *
-ngx_http_v2_write_int(u_char *pos, ngx_uint_t prefix, ngx_uint_t value)
+ngx_http_v2_push_write_int(u_char *pos, ngx_uint_t prefix, ngx_uint_t value)
 {
     if (value < prefix) {
         *pos++ |= value;
@@ -44,7 +44,7 @@ ngx_http_v2_write_int(u_char *pos, ngx_uint_t prefix, ngx_uint_t value)
 
 
 u_char *
-ngx_http_v2_string_encode(u_char *dst, u_char *src, size_t len, u_char *tmp,
+ngx_http_v2_push_string_encode(u_char *dst, u_char *src, size_t len, u_char *tmp,
     ngx_uint_t lower)
 {
     size_t  hlen;
@@ -53,12 +53,12 @@ ngx_http_v2_string_encode(u_char *dst, u_char *src, size_t len, u_char *tmp,
 
     if (hlen > 0) {
         *dst = NGX_HTTP_V2_ENCODE_HUFF;
-        dst = ngx_http_v2_write_int(dst, ngx_http_v2_prefix(7), hlen);
+        dst = ngx_http_v2_push_write_int(dst, ngx_http_v2_prefix(7), hlen);
         return ngx_cpymem(dst, tmp, hlen);
     }
 
     *dst = NGX_HTTP_V2_ENCODE_RAW;
-    dst = ngx_http_v2_write_int(dst, ngx_http_v2_prefix(7), len);
+    dst = ngx_http_v2_push_write_int(dst, ngx_http_v2_prefix(7), len);
 
     if (lower) {
         ngx_strlow(dst, src, len);
@@ -300,7 +300,7 @@ ngx_http_v2_node_children_update(ngx_http_v2_node_t *node)
 
 
 ngx_http_v2_node_t *
-ngx_http_v2_get_node_by_id(ngx_http_v2_connection_t *h2c, ngx_uint_t sid,
+ngx_http_v2_push_get_node_by_id(ngx_http_v2_connection_t *h2c, ngx_uint_t sid,
     ngx_uint_t alloc)
 {
     ngx_uint_t               index;
@@ -310,7 +310,7 @@ ngx_http_v2_get_node_by_id(ngx_http_v2_connection_t *h2c, ngx_uint_t sid,
     h2scf = ngx_http_get_module_srv_conf(h2c->http_connection->conf_ctx,
                                          ngx_http_v2_module);
 
-    index = ngx_http_v2_index(h2scf, sid);
+    index = ngx_http_v2_push_index(h2scf, sid);
 
     for (node = h2c->streams_index[index]; node; node = node->index) {
 
@@ -363,7 +363,7 @@ ngx_http_v2_get_closed_node(ngx_http_v2_connection_t *h2c)
 
     node = ngx_queue_data(q, ngx_http_v2_node_t, reuse);
 
-    next = &h2c->streams_index[ngx_http_v2_index(h2scf, node->id)];
+    next = &h2c->streams_index[ngx_http_v2_push_index(h2scf, node->id)];
 
     for ( ;; ) {
         n = *next;
