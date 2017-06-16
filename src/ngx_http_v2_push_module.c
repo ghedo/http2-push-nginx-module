@@ -709,12 +709,15 @@ ngx_http_v2_push_above_max_pushes(ngx_http_v2_push_srv_conf_t *h2pscf,
 static ngx_int_t
 ngx_http_v2_push_populate_path(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 {
-    r->uri_start = u_str;
-    r->uri_end   = u_str + u_len;
+    r->uri_start = ngx_pcalloc(r->pool, u_len);
+    if (r->uri_start == NULL) {
+        return NGX_ERROR;
+    }
+    r->uri_end = ngx_cpymem(r->uri_start, u_str, u_len);
 
     if (ngx_http_parse_uri(r) != NGX_OK) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                      "invalid push path: \"%*s\"", u_len, u_str);
+                      "invalid push path: \"%*s\"", u_len, r->uri_start);
 
         return NGX_ERROR;
     }
