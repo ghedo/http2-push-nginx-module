@@ -1,5 +1,6 @@
 
 /*
+ * Copyright (C) Cloudflare, Inc.
  * Copyright (C) Alessandro Ghedini
  */
 
