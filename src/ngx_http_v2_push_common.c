@@ -495,3 +495,94 @@ ngx_http_v2_run_request(ngx_http_request_t *r)
 
     ngx_http_process_request(r);
 }
+
+
+void
+ngx_http_v2_push_set_dependency(ngx_http_v2_connection_t *h2c,
+    ngx_http_v2_node_t *node, ngx_uint_t depend, ngx_uint_t exclusive)
+{
+    ngx_queue_t         *children, *q;
+    ngx_http_v2_node_t  *parent, *child, *next;
+
+    parent = depend ? ngx_http_v2_push_get_node_by_id(h2c, depend, 0) : NULL;
+
+    if (parent == NULL) {
+        parent = NGX_HTTP_V2_ROOT;
+
+        if (depend != 0) {
+            exclusive = 0;
+        }
+
+        node->rank = 1;
+        node->rel_weight = (1.0 / 256) * node->weight;
+
+        children = &h2c->dependencies;
+
+    } else {
+        if (node->parent != NULL) {
+
+            for (next = parent->parent;
+                 next != NGX_HTTP_V2_ROOT && next->rank >= node->rank;
+                 next = next->parent)
+            {
+                if (next != node) {
+                    continue;
+                }
+
+                ngx_queue_remove(&parent->queue);
+                ngx_queue_insert_after(&node->queue, &parent->queue);
+
+                parent->parent = node->parent;
+
+                if (node->parent == NGX_HTTP_V2_ROOT) {
+                    parent->rank = 1;
+                    parent->rel_weight = (1.0 / 256) * parent->weight;
+
+                } else {
+                    parent->rank = node->parent->rank + 1;
+                    parent->rel_weight = (node->parent->rel_weight / 256)
+                                         * parent->weight;
+                }
+
+                if (!exclusive) {
+                    ngx_http_v2_node_children_update(parent);
+                }
+
+                break;
+            }
+        }
+
+        node->rank = parent->rank + 1;
+        node->rel_weight = (parent->rel_weight / 256) * node->weight;
+
+        if (parent->stream == NULL && (depend % 2 != 0)) {
+            ngx_queue_remove(&parent->reuse);
+            ngx_queue_insert_tail(&h2c->closed, &parent->reuse);
+        }
+
+        children = &parent->children;
+    }
+
+    if (exclusive) {
+        for (q = ngx_queue_head(children);
+             q != ngx_queue_sentinel(children);
+             q = ngx_queue_next(q))
+        {
+            child = ngx_queue_data(q, ngx_http_v2_node_t, queue);
+            child->parent = node;
+        }
+
+        ngx_queue_add(&node->children, children);
+        ngx_queue_init(children);
+    }
+
+    if (node->parent != NULL) {
+        ngx_queue_remove(&node->queue);
+    }
+
+    ngx_queue_insert_tail(children, &node->queue);
+
+    node->parent = parent;
+
+    ngx_http_v2_node_children_update(node);
+}

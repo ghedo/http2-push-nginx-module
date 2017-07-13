@@ -36,4 +36,7 @@ ngx_http_v2_node_t *ngx_http_v2_push_get_node_by_id(
 
 void ngx_http_v2_run_request(ngx_http_request_t *r);
 
+void ngx_http_v2_push_set_dependency(ngx_http_v2_connection_t *h2c,
+    ngx_http_v2_node_t *node, ngx_uint_t depend, ngx_uint_t exclusive);
+
 #endif /* _NGX_HTTP_V2_PUSH_H_INCLUDED_ */

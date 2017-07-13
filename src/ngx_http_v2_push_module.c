@@ -737,6 +737,7 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     ngx_http_v2_push_srv_conf_t   *h2pscf;
     ngx_http_v2_node_t            *node;
     ngx_http_v2_stream_t          *stream;
+    ngx_uint_t                     weight;
 
     h2c = r->stream->connection;
 
@@ -817,6 +818,14 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     stream->node = node;
 
     node->stream = stream;
+
+    /* Default weight used by NGINX */
+    weight = 16;
+
+    if (node->parent == NULL) {
+        node->weight = weight;
+        ngx_http_v2_push_set_dependency(h2c, node, 0, 0);
+    }
 
     ngx_http_v2_push_mark_as_pushed(h2c, u_str, u_len);
 
