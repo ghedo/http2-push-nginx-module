@@ -768,6 +768,11 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
         goto error;
     }
 
+    if (node->parent) {
+        ngx_queue_remove(&node->reuse);
+        h2c->closed_nodes--;
+    }
+
     h2c->next_sid += 2;
 
     stream = ngx_http_v2_create_stream(h2c);
