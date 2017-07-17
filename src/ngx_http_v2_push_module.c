@@ -796,11 +796,16 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     pr->schema_start = (u_char *) (r->connection->ssl ? "https" : "http");
     pr->schema_end = pr->schema_start + ngx_strlen(pr->schema_start);
 
-    if (ngx_http_v2_push_populate_path(pr, u_str, u_len) != NGX_OK) {
+    stream->in_closed = h2c->state.flags & NGX_HTTP_V2_END_STREAM_FLAG;
+    stream->node = node;
+
+    node->stream = stream;
+
+    if (ngx_http_v2_push_copy_header(pr, r->headers_in.host) != NGX_OK) {
         goto error;
     }
 
-    if (ngx_http_v2_push_copy_header(pr, r->headers_in.host) != NGX_OK) {
+    if (ngx_http_v2_push_populate_path(pr, u_str, u_len) != NGX_OK) {
         goto error;
     }
 
@@ -813,11 +818,6 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
          != NGX_OK) {
         goto error;
     }
-
-    stream->in_closed = h2c->state.flags & NGX_HTTP_V2_END_STREAM_FLAG;
-    stream->node = node;
-
-    node->stream = stream;
 
     /* Default weight used by NGINX */
     weight = 16;
