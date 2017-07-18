@@ -710,6 +710,8 @@ ngx_http_v2_push_above_max_pushes(ngx_http_v2_push_srv_conf_t *h2pscf,
 static ngx_int_t
 ngx_http_v2_push_populate_path(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 {
+    ngx_http_core_srv_conf_t  *cscf;
+
     r->uri_start = ngx_pcalloc(r->pool, u_len);
     if (r->uri_start == NULL) {
         return NGX_ERROR;
@@ -723,7 +725,51 @@ ngx_http_v2_push_populate_path(ngx_http_request_t *r, u_char *u_str, size_t u_le
         return NGX_ERROR;
     }
 
-    return ngx_http_process_request_uri(r);
+    if (r->args_start) {
+        r->uri.len = r->args_start - 1 - r->uri_start;
+    } else {
+        r->uri.len = r->uri_end - r->uri_start;
+    }
+
+    if (r->complex_uri || r->quoted_uri) {
+
+        r->uri.data = ngx_pnalloc(r->pool, r->uri.len + 1);
+        if (r->uri.data == NULL) {
+            return NGX_ERROR;
+        }
+
+        cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+
+        if (ngx_http_parse_complex_uri(r, cscf->merge_slashes) != NGX_OK) {
+            r->uri.len = 0;
+            return NGX_ERROR;
+        }
+
+    } else {
+        r->uri.data = r->uri_start;
+    }
+
+    r->unparsed_uri.len = r->uri_end - r->uri_start;
+    r->unparsed_uri.data = r->uri_start;
+
+    r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;
+
+    if (r->uri_ext) {
+        if (r->args_start) {
+            r->exten.len = r->args_start - 1 - r->uri_ext;
+        } else {
+            r->exten.len = r->uri_end - r->uri_ext;
+        }
+
+        r->exten.data = r->uri_ext;
+    }
+
+    if (r->args_start && r->uri_end > r->args_start) {
+        r->args.len = r->uri_end - r->args_start;
+        r->args.data = r->args_start;
+    }
+
+    return NGX_OK;
 }
 
 
