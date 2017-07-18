@@ -782,7 +782,7 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     ngx_http_v2_connection_t      *h2c;
     ngx_http_v2_push_srv_conf_t   *h2pscf;
     ngx_http_v2_node_t            *node;
-    ngx_http_v2_stream_t          *stream;
+    ngx_http_v2_stream_t          *stream = NULL;
     ngx_uint_t                     weight;
 
     h2c = r->stream->connection;
@@ -880,6 +880,10 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     return NGX_OK;
 
 error:
+
+    if (stream != NULL) {
+        ngx_http_v2_close_stream(stream, NGX_HTTP_INTERNAL_SERVER_ERROR);
+    }
 
     return NGX_ERROR;
 }
