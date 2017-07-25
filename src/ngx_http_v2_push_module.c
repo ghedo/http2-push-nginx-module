@@ -777,6 +777,7 @@ ngx_int_t
 ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 {
     ngx_http_request_t            *pr;
+    ngx_pool_t                    *pool;
 
     ngx_http_v2_push_ctx_t        *ctx;
     ngx_http_v2_connection_t      *h2c;
@@ -822,10 +823,17 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     h2c->next_sid += 2;
 
+    pool = ngx_create_pool(sizeof(ngx_pool_t), h2c->connection->log);
+    if (pool == NULL) {
+        goto error;
+    }
+
     stream = ngx_http_v2_create_stream(h2c);
     if (stream == NULL) {
         goto error;
     }
+
+    stream->pool = pool;
 
     pr = stream->request;
 
