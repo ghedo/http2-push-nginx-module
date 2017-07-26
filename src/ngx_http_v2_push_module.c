@@ -855,6 +855,14 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     node->stream = stream;
 
+    /* Default weight used by NGINX */
+    weight = 16;
+
+    if (node->parent == NULL) {
+        node->weight = weight;
+        ngx_http_v2_push_set_dependency(h2c, node, 0, 0);
+    }
+
     if (ngx_http_v2_push_copy_header(pr, r->headers_in.host) != NGX_OK) {
         goto error;
     }
@@ -871,14 +879,6 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     if (ngx_http_v2_push_copy_header(pr, r->headers_in.user_agent)
          != NGX_OK) {
         goto error;
-    }
-
-    /* Default weight used by NGINX */
-    weight = 16;
-
-    if (node->parent == NULL) {
-        node->weight = weight;
-        ngx_http_v2_push_set_dependency(h2c, node, 0, 0);
     }
 
     ngx_http_v2_push_mark_as_pushed(h2c, u_str, u_len);
