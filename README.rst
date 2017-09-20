@@ -8,8 +8,8 @@ http2-push-nginx-module_ is an *experimental* and *extremely unstable* NGINX
 module that implements HTTP/2 server push.
 
 The module can be used by either specifying what resources to push statically
-in the NGINX config file as in [this example](examples/static/) or by using
-Openresty and Lua's FFI support as in [this other example](examples/openresty).
+in the NGINX config file (as in the `examples/static/` example) or by leveraging
+Openresty and Lua's FFI support as in the `examples/openresty/` example.
 
 .. _http2-push-nginx-module: https://ghedo.github.io/http2-push-nginx-module
 
