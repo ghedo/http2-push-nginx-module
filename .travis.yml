@@ -21,8 +21,8 @@ compiler:
  - gcc-6
 
 env:
- - NGINX_VERSION=1.11.12
- - NGINX_VERSION=1.12.0
+ - NGINX_VERSION=1.12.2
+ - NGINX_VERSION=1.13.6
 
 script:
  - wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz"

@@ -1,8 +1,8 @@
 diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
-index f3050f1d..88d6dd2c 100644
+index 2c621907..8258a996 100644
 --- a/src/http/v2/ngx_http_v2.c
 +++ b/src/http/v2/ngx_http_v2.c
-@@ -40,6 +40,7 @@
+@@ -41,6 +41,7 @@
  
  /* settings fields */
  #define NGX_HTTP_V2_HEADER_TABLE_SIZE_SETTING    0x1
@@ -10,9 +10,9 @@ index f3050f1d..88d6dd2c 100644
  #define NGX_HTTP_V2_MAX_STREAMS_SETTING          0x3
  #define NGX_HTTP_V2_INIT_WINDOW_SIZE_SETTING     0x4
  #define NGX_HTTP_V2_MAX_FRAME_SIZE_SETTING       0x5
-@@ -245,6 +246,9 @@ ngx_http_v2_init(ngx_event_t *rev)
+@@ -247,6 +248,9 @@ ngx_http_v2_init(ngx_event_t *rev)
  
-     h2c->frame_size = NGX_HTTP_V2_DEFAULT_FRAME_SIZE;
+     h2c->table_update = 1;
  
 +    h2c->next_sid = 2;
 +    h2c->enable_push = 1;
@@ -20,7 +20,7 @@ index f3050f1d..88d6dd2c 100644
      h2scf = ngx_http_get_module_srv_conf(hc->conf_ctx, ngx_http_v2_module);
  
      h2c->pool = ngx_create_pool(h2scf->pool_size, h2c->connection->log);
-@@ -2029,6 +2033,19 @@ ngx_http_v2_state_settings_params(ngx_http_v2_connection_t *h2c, u_char *pos,
+@@ -2020,6 +2024,19 @@ ngx_http_v2_state_settings_params(ngx_http_v2_connection_t *h2c, u_char *pos,
              h2c->frame_size = value;
              break;
  
@@ -41,7 +41,7 @@ index f3050f1d..88d6dd2c 100644
              break;
          }
 diff --git a/src/http/v2/ngx_http_v2.h b/src/http/v2/ngx_http_v2.h
-index cddfccd2..1b405f69 100644
+index 42e0eb13..4d05e816 100644
 --- a/src/http/v2/ngx_http_v2.h
 +++ b/src/http/v2/ngx_http_v2.h
 @@ -12,6 +12,7 @@
@@ -52,7 +52,7 @@ index cddfccd2..1b405f69 100644
  
  #define NGX_HTTP_V2_ALPN_ADVERTISE       "\x02h2"
  #define NGX_HTTP_V2_NPN_ADVERTISE        NGX_HTTP_V2_ALPN_ADVERTISE
-@@ -141,11 +142,15 @@ struct ngx_http_v2_connection_s {
+@@ -141,12 +142,16 @@ struct ngx_http_v2_connection_s {
      ngx_queue_t                      closed;
  
      ngx_uint_t                       last_sid;
@@ -62,6 +62,7 @@ index cddfccd2..1b405f69 100644
  
      unsigned                         closed_nodes:8;
      unsigned                         settings_ack:1;
+     unsigned                         table_update:1;
      unsigned                         blocked:1;
      unsigned                         goaway:1;
 +    unsigned                         enable_push:1;
