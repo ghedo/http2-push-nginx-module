@@ -30,10 +30,6 @@ typedef struct {
 } ngx_http_v2_push_loc_conf_t;
 
 typedef struct {
-    ngx_queue_t   pushes;
-} ngx_http_v2_push_ctx_t;
-
-typedef struct {
     ngx_str_t     path;
     ngx_uint_t    hash;
 } ngx_http_v2_push_path_t;
@@ -269,24 +265,6 @@ ngx_http_v2_push_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     path->len  = value[1].len;
 
     return NGX_CONF_OK;
-}
-
-
-static ngx_http_v2_push_ctx_t *
-ngx_http_v2_push_create_ctx(ngx_http_request_t *r)
-{
-    ngx_http_v2_push_ctx_t  *ctx;
-
-    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_v2_push_ctx_t));
-    if (ctx == NULL) {
-        return NULL;
-    }
-
-    ngx_queue_init(&ctx->pushes);
-
-    ngx_http_set_ctx(r, ctx, ngx_http_v2_push_module);
-
-    return ctx;
 }
 
 
@@ -779,7 +757,6 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
     ngx_http_request_t            *pr;
     ngx_pool_t                    *pool;
 
-    ngx_http_v2_push_ctx_t        *ctx;
     ngx_http_v2_connection_t      *h2c;
     ngx_http_v2_push_srv_conf_t   *h2pscf;
     ngx_http_v2_node_t            *node;
@@ -800,14 +777,6 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     if (ngx_http_v2_push_above_max_pushes(h2pscf, h2c)) {
         return NGX_DECLINED;
-    }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_v2_push_module);
-    if (ctx == NULL) {
-        ctx = ngx_http_v2_push_create_ctx(r);
-        if (ctx == NULL) {
-            return NGX_ERROR;
-        }
     }
 
     node = ngx_http_v2_push_get_node_by_id(h2c, h2c->next_sid, 1);
@@ -883,7 +852,7 @@ ngx_http_v2_push(ngx_http_request_t *r, u_char *u_str, size_t u_len)
 
     ngx_http_v2_push_mark_as_pushed(h2c, u_str, u_len);
 
-    ngx_queue_insert_tail(&ctx->pushes, &stream->queue);
+    ngx_http_v2_push_queue_promise(r, stream);
 
     return NGX_OK;
 
@@ -900,7 +869,6 @@ error:
 static ngx_int_t
 ngx_http_v2_push_header_filter(ngx_http_request_t *r)
 {
-    ngx_http_v2_push_ctx_t       *ctx;
     ngx_http_v2_push_loc_conf_t  *conf;
 
     if (!r->stream) {
@@ -919,23 +887,6 @@ ngx_http_v2_push_header_filter(ngx_http_request_t *r)
         for (i = 0; i < conf->paths->nelts; i++) {
             ngx_http_v2_push(r, p[i].data, p[i].len);
         }
-    }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_v2_push_module);
-    if (ctx == NULL) {
-        goto done;
-    }
-
-    while (!ngx_queue_empty(&ctx->pushes)) {
-        ngx_queue_t           *q;
-        ngx_http_v2_stream_t  *push;
-
-        q = ngx_queue_head(&ctx->pushes);
-        ngx_queue_remove(q);
-
-        push = ngx_queue_data(q, ngx_http_v2_stream_t, queue);
-
-        ngx_http_v2_push_queue_promise(r, push);
     }
 
 done:

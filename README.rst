@@ -75,7 +75,6 @@ TODO
 ----
 
 * Honour MAX_CONCURRENT_STREAMS setting from clients
-* Clean-up (e.g. do we really need the request context?)
 * Write tests (basic, 304 response, CONTINUATION, ...)
 * Write example to parse Link headers (in Lua)
 
