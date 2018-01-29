@@ -336,7 +336,7 @@ ngx_http_v2_create_push_promise_frame(ngx_http_request_t *r, u_char *pos,
     stream = r->stream;
     rest = end - pos;
 
-    frame = ngx_palloc(r->pool, sizeof(ngx_http_v2_out_frame_t));
+    frame = ngx_pcalloc(r->pool, sizeof(ngx_http_v2_out_frame_t));
     if (frame == NULL) {
         return NULL;
     }
