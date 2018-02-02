@@ -22,7 +22,7 @@ compiler:
 
 env:
  - NGINX_VERSION=1.12.2
- - NGINX_VERSION=1.13.6
+ - NGINX_VERSION=1.13.8
 
 script:
  - wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz"
