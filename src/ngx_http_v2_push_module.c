@@ -470,8 +470,8 @@ ngx_http_v2_push_queue_promise(ngx_http_request_t *r,
 
     tmp_len = len;
 
-    tmp = ngx_pcalloc(pr->pool, tmp_len);
-    pos = ngx_pcalloc(pr->pool, len);
+    tmp = ngx_pcalloc(r->pool, tmp_len);
+    pos = ngx_pcalloc(r->pool, len);
 
     if (pos == NULL || tmp == NULL) {
         return NGX_ERROR;
