@@ -4,6 +4,8 @@ http2-push-nginx-module
 .. image:: https://travis-ci.org/ghedo/http2-push-nginx-module.png
   :target: https://travis-ci.org/ghedo/http2-push-nginx-module
 
+**DEPRECATED** NGINX upstream now supports [HTTP/2 server push](http://hg.nginx.org/nginx/rev/641306096f5b)
+
 http2-push-nginx-module_ is an *experimental* and *extremely unstable* NGINX
 module that implements HTTP/2 server push.
 
