@@ -1,0 +1,78 @@
+diff -Naur /home1/irteam/oss_repos/oneapp-proxy/nginx/externals/nginx-1.12.2/auto/cc/gcc ./auto/cc/gcc
+--- /home1/irteam/oss_repos/oneapp-proxy/nginx/externals/nginx-1.12.2/auto/cc/gcc	2017-10-17 22:16:37.000000000 +0900
++++ ./auto/cc/gcc	2018-02-13 18:03:56.579996920 +0900
+@@ -166,7 +166,8 @@
+ 
+ 
+ # stop on warning
+-CFLAGS="$CFLAGS -Werror"
++#CFLAGS="$CFLAGS -Werror"
++CFLAGS="$CFLAGS"
+ 
+ # debug
+ CFLAGS="$CFLAGS -g"
+diff -Naur /home1/irteam/oss_repos/oneapp-proxy/nginx/externals/nginx-1.12.2/auto/make ./auto/make
+--- /home1/irteam/oss_repos/oneapp-proxy/nginx/externals/nginx-1.12.2/auto/make	2017-10-17 22:16:37.000000000 +0900
++++ ./auto/make	2018-02-13 18:03:56.579996920 +0900
+@@ -20,10 +20,12 @@
+ 
+ cat << END                                                     > $NGX_MAKEFILE
+ 
++CXX = g++
+ CC =	$CC
+ CFLAGS = $CFLAGS
+ CPP =	$CPP
+-LINK =	$LINK
++#LINK =	$LINK
++LINK =	g++
+ 
+ END
+ 
+@@ -403,15 +405,38 @@
+ 
+ fi
+ 
++function check_use_cpp(){
++    echo in1
++    cpp_files=("entry.tab.c" "lex.yy.c" "entry.cpp" "execute.cpp" "ngx_http_v2_push_rule_dynamic_parse.cpp")
++    for file in ${cpp_files[@]}
++    do
++        echo $1 | grep $file 2>&1;
++        if [ $? -eq 0 ];then
++            echo in2
++            ngx_gcc=$ngx_cxx
++            return 0
++        fi
++    done
++    echo in3
++    return 0
++}
+ 
+ # the addons sources
+ 
+ if test -n "$NGX_ADDON_SRCS"; then
+ 
+     ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++    ngx_cxx="\$(CXX) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
+ 
+     for ngx_src in $NGX_ADDON_SRCS
+     do
++        ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
++        ngx_gcc=$ngx_cc
++        echo out
++        check_use_cpp $ngx_src
++        #if [ $ret -eq 2 ]; then
++        #    ngx_gcc=$ngc_cxx
++        #fi
+         ngx_obj="addon/`basename \`dirname $ngx_src\``"
+ 
+         ngx_obj=`echo $ngx_obj/\`basename $ngx_src\` \
+@@ -428,7 +453,7 @@
+         cat << END                                            >> $NGX_MAKEFILE
+ 
+ $ngx_obj:	\$(ADDON_DEPS)$ngx_cont$ngx_src
+-	$ngx_cc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
++	$ngx_gcc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
+ 
+ END
+      done
