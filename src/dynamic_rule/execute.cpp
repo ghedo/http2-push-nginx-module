@@ -114,6 +114,7 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                 case UMINUS: 
                     return -ex(p->opr.op[0]);
                 case '+': 
+                    std::cout << "+" << std::endl;
                     return ex(p->opr.op[0]) + ex(p->opr.op[1]);
                 case '-': 
                     return ex(p->opr.op[0]) - ex(p->opr.op[1]);
@@ -134,7 +135,31 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                 case EQ: 
                     return ex(p->opr.op[0]) == ex(p->opr.op[1]);
                 case STR_APPEND:
-                    g_sym_str[p->opr.op[0]->str_id.i].append(node2_str(p->opr.op[1]));
+                    std::cout << "STR_APPEND" << std::endl;
+                    if (p->opr.op[0]->type == typeOpr) {
+                        ex(p->opr.op[0]);
+                    } else {
+                        g_append_str.append(node2_str(p->opr.op[0]));
+                    }
+                                        
+                    if (p->opr.op[1]->type == typeOpr) {
+                        ex(p->opr.op[1]);
+                    } else {
+                        g_append_str.append(node2_str(p->opr.op[1]));
+                    }
+
+                    return 0;
+                case '~':
+                    std::cout << "STR_APPEND_END" << std::endl;
+                    if (p->opr.op[1]->type == typeOpr) {
+                        ex(p->opr.op[1]);
+                    }
+                    if (g_append_str.empty()) {
+                        g_sym_str[p->opr.op[0]->str_id.i].append(node2_str(p->opr.op[1]));
+                    } else {
+                        g_sym_str[p->opr.op[0]->str_id.i].append(g_append_str);
+                        g_append_str.clear();
+                    }
                     return 0;
                 case REGEX:
                     regex_replace(g_sym_str[p->opr.op[0]->str_id.i], node2_str(p->opr.op[1]));

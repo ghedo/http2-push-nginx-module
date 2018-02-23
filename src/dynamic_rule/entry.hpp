@@ -51,11 +51,6 @@ typedef struct {
     cJSON *cjson;
 } jsonConNodeType;
 
-/* identifiers */
-typedef struct {
-    std::string *p_var_name;
-} IdNodeType;
-
 /* json identifiers */
 typedef struct {
     int i; /* subscript to sym array */
@@ -91,7 +86,6 @@ typedef struct nodeTypeTag {
         jsonConNodeType con_json;
         jsonIdNodeType json_id;
         strIdNodeType str_id; /* string identifiers */
-        IdNodeType var_id;
         oprNodeType opr; /* operators */
     };
 } nodeType;
@@ -144,7 +138,7 @@ std::string int2string(int i);
 extern int g_sym_int[26];
 extern std::string g_sym_str[26];
 extern cJSON *g_sym_json[26];
-extern std::string g_buf_str;
+extern std::string g_buf_str, g_append_str;
 extern objectTypeEnum g_object_type;
 extern cJSON *g_json_root;
 extern std::set<std::string> g_push_ret;

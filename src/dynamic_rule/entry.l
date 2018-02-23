@@ -111,6 +111,7 @@ str {
 "else" return ELSE;
 "print" return PRINT;
 "push" return PUSH;
+"..." return STR_APPEND_END;
 ".." return STR_APPEND;
 "regex" return REGEX;
 [ \t\n]+ ; /* ignore whitespace */

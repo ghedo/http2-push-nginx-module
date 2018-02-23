@@ -26,10 +26,10 @@ void push_rule_dynamic_parse_wapper(const char *type,
 			 const char *body) {
     push_rule_dynamic_parse(type, rule_file_path, body);
 }
-//int main (void) {
-//   push_rule_dynamic_parse_wapper("json",
-//			    "file.txt",
-//       g_test_json);
-//    return 0;
-//
-//}
+int main (void) {
+   push_rule_dynamic_parse_wapper("json",
+			    "file.txt",
+      g_test_json);
+    return 0;
+
+}

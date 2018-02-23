@@ -1,3 +1,5 @@
+int o = 1+2*3;
+print int o;
 print 123456;
 print "in111";
 for (json a : $json_root recentMessage.messageList) {
@@ -6,8 +8,9 @@ for (json a : $json_root recentMessage.messageList) {
         // sticker
         print "in333";
         str s = "/static/wm/stickers/0/0/100/1/iPhone";
-        str s .. @json a.number;
-        str s .. ".png";
+        str s ... @json a.number;
+        str t = "tt";
+        str s ... ".png" .. @json a.number .. "haha" .. str t;
         print str s;
         str s regex "(/[^/]+\.png)";
         print str s;

@@ -20,7 +20,7 @@ int ex(nodeType *p, std::string *str_ret = NULL);
 int g_sym_int[26];
 std::string g_sym_str[26];
 cJSON *g_sym_json[26];
-std::string g_buf_str;
+std::string g_buf_str, g_append_str;
 objectTypeEnum g_object_type;
 cJSON *g_json_root;
 std::set<std::string> g_push_ret;
@@ -44,8 +44,10 @@ std::set<std::string> g_push_ret;
 %nonassoc ELSE
 %left '.'
 %left GE LE EQ NE '>' '<'
-%left '+' '-' STR_APPEND REGEX
+%left '+' '-' REGEX
 %left '*' '/'
+%left STR_APPEND_END
+%left STR_APPEND
 %nonassoc UMINUS
 %type <n_ptr> stmt expr stmt_list
 %%
@@ -54,7 +56,8 @@ program:
 function { }
 ;
 
-function:function stmt {ex($2); freeNode($2); }
+function:
+function stmt {ex($2); freeNode($2); }
 | /* NULL */
 ;
 
@@ -66,7 +69,7 @@ stmt:
 | JSON_VAR_BEGIN JSON_VARIABLE '=' PARSE_JSON expr ';' { $$ = opr(PARSE_JSON, 2, id_json($2), $5); }
 | INT_VAR_BEGIN INT_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_int($2), $4); }
 | STR_VAR_BEGIN STR_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_str($2), $4); }
-| STR_VAR_BEGIN STR_VARIABLE STR_APPEND expr ';'{ $$ = opr(STR_APPEND, 2, id_str($2), $4); }
+| STR_VAR_BEGIN STR_VARIABLE STR_APPEND_END expr ';'{ $$ = opr('~', 2, id_str($2), $4); }
 | STR_VAR_BEGIN STR_VARIABLE REGEX expr ';'{ $$ = opr(REGEX, 2, id_str($2), $4); }
 | WHILE '(' expr ')' stmt { $$ = opr(WHILE, 2, $3, $5); }
 | FOR '(' expr ':' expr ')' stmt { $$ = opr(FOR, 3, $3, $5, $7); }
@@ -98,6 +101,7 @@ INT { $$ = con_int($1); }
 | expr LE expr { $$ = opr(LE, 2, $1, $3); }
 | expr NE expr { $$ = opr(NE, 2, $1, $3); }
 | expr EQ expr { $$ = opr(EQ, 2, $1, $3); }
+| expr STR_APPEND expr { $$ = opr(STR_APPEND, 2, $1, $3); }
 | '(' expr ')' { $$ = $2; }
 ;
 
