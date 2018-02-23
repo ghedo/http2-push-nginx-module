@@ -116,6 +116,11 @@ str {
 "regex" return REGEX;
 [ \t\n]+ ; /* ignore whitespace */
 
+[a-zA-Z0-9/.]+ {
+    yylval.s_entry = yytext;
+    return VARIABLE;
+}
+
 . yyerror("Unknown character");
 %%
 

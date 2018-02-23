@@ -9,6 +9,7 @@ nodeType *opr(int oper, int nops, ...);
 nodeType *id_int(int i);
 nodeType *id_str(int i);
 nodeType *id_json(std::string &sValue);
+nodeType *id_var(std::string &sValue);
 nodeType *con_int(int value);
 nodeType *con_str(std::string &sValue);
 nodeType *con_json(std::string &sValue);
@@ -17,6 +18,8 @@ extern int yylex(void);
 void yyerror(const char *s);
 }
 int ex(nodeType *p, std::string *str_ret = NULL);
+
+std::map<int, nodeEnum> g_id_type;
 int g_sym_int[26];
 std::string g_sym_str[26];
 cJSON *g_sym_json[26];
@@ -34,6 +37,7 @@ std::set<std::string> g_push_ret;
 %token<i_entry> INT_VARIABLE
 %token<i_entry> STR_VARIABLE 
 %token<s_entry> JSON_VARIABLE 
+%token<s_entry> VARIABLE 
 %token<s_entry> INT_VAR_BEGIN 
 %token<s_entry> STR_VAR_BEGIN
 %token<s_entry> STR_CON_BEGIN
@@ -69,8 +73,8 @@ stmt:
 | JSON_VAR_BEGIN JSON_VARIABLE '=' PARSE_JSON expr ';' { $$ = opr(PARSE_JSON, 2, id_json($2), $5); }
 | INT_VAR_BEGIN INT_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_int($2), $4); }
 | STR_VAR_BEGIN STR_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_str($2), $4); }
-| STR_VAR_BEGIN STR_VARIABLE STR_APPEND_END expr ';'{ $$ = opr('~', 2, id_str($2), $4); }
-| STR_VAR_BEGIN STR_VARIABLE REGEX expr ';'{ $$ = opr(REGEX, 2, id_str($2), $4); }
+| VARIABLE STR_APPEND_END expr ';'{ $$ = opr('~', 2, id_var($1), $3); }
+| VARIABLE REGEX expr ';'{ $$ = opr(REGEX, 2, id_var($1), $3); }
 | WHILE '(' expr ')' stmt { $$ = opr(WHILE, 2, $3, $5); }
 | FOR '(' expr ':' expr ')' stmt { $$ = opr(FOR, 3, $3, $5, $7); }
 | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
@@ -87,8 +91,7 @@ expr:
 INT { $$ = con_int($1); }
 |STR_CON_BEGIN STR {$$ = con_str($2);}
 | JSON_CON_BEGIN JSON_CON {$$ = con_json($2);}
-| INT_VAR_BEGIN INT_VARIABLE { $$ = id_int($2); }
-| STR_VAR_BEGIN STR_VARIABLE { $$ = id_str($2); }
+| VARIABLE { $$ = id_var($1); }
 | JSON_VAR_BEGIN JSON_VARIABLE { $$ = id_json($2); }
 | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
 | expr '+' expr { $$ = opr('+', 2, $1, $3); }
@@ -151,7 +154,15 @@ nodeType *con_json(std::string &sValue) {
     return p;
 }
 
-nodeType *id_int(int i) {
+static nodeEnum get_var_type(int i) {
+    std::map<int, nodeEnum>::iterator iter = g_id_type.find(i);
+    if (iter == g_id_type.end()) {
+        return typeNodeUnknown;
+    }
+    return iter->second;
+}
+
+static nodeType *create_int_id_node(int i) {
     nodeType *p;
     size_t nodeSize;
     /* allocate node */
@@ -161,10 +172,10 @@ nodeType *id_int(int i) {
     /* copy information */
     p->type = typeIntId;
     p->int_id.i = i;
-   return p;
+    return p;
 }
 
-nodeType *id_str(int i) {
+static nodeType *create_str_id_node(int i) {
     nodeType *p;
     size_t nodeSize;
     /* allocate node */
@@ -174,11 +185,10 @@ nodeType *id_str(int i) {
     /* copy information */
     p->type = typeStrId;
     p->str_id.i = i;
-   return p;
+    return p;
 }
 
-nodeType *id_json(std::string &sValue) {
-    printf("in... %s\n", sValue.c_str());
+static nodeType *create_json_id_node(std::string &sValue) {
     nodeType *p;
     size_t nodeSize;
     if (sValue.empty()) {
@@ -190,7 +200,6 @@ nodeType *id_json(std::string &sValue) {
         yyerror("out of memory");
     /* copy information */
     p->type = typeJsonId;
-    printf(".............%s", sValue.c_str());
     p->json_id.i = (char)(*sValue.begin()) - 'a';
     p->json_id.need_free = false;
     if (sValue.size() == 1) {
@@ -198,8 +207,47 @@ nodeType *id_json(std::string &sValue) {
     } else {
         p->json_id.path = new std::string(sValue.begin() + 2, sValue.end());
     }
+    return p;
+}
 
-   return p;
+nodeType *id_var(std::string &sValue) {
+    nodeType *p;
+    int i = (char)(*sValue.begin()) - 'a';
+    nodeEnum node_type = get_var_type(i);
+    if (node_type == typeNodeUnknown) {
+        yyerror("can't find var");
+        return NULL;
+    }
+    if (node_type == typeIntId) {
+        p = create_int_id_node(i);
+    } else if (node_type == typeStrId) {
+        p = create_str_id_node(i);
+
+    } else if (node_type == typeJsonId) {
+        p = create_json_id_node(sValue);
+    }
+    return p;
+}
+
+nodeType *id_int(int i) {
+    nodeType *p;
+    p = create_int_id_node(i);
+    g_id_type[i] = typeIntId;
+    return p;
+}
+
+nodeType *id_str(int i) {
+    nodeType *p;
+    p = create_str_id_node(i);
+    g_id_type[i] = typeStrId;
+    return p;
+}
+
+nodeType *id_json(std::string &sValue) {
+    nodeType *p;
+    p = create_json_id_node(sValue);
+    g_id_type[p->json_id.i] = typeJsonId;
+    return p;
 }
 
 nodeType *opr(int oper, int nops, ...) {

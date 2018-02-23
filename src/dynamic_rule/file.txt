@@ -1,21 +1,21 @@
 int o = 1+2*3;
-print int o;
+print o;
 print 123456;
 print "in111";
 for (json a : $json_root recentMessage.messageList) {
     print "in222";
-    if (json a.messageTypeCode == 18) {
+    if (a.messageTypeCode == 18) {
         // sticker
         print "in333";
         str s = "/static/wm/stickers/0/0/100/1/iPhone";
-        str s ... @json a.number;
+        s ... a.number;
         str t = "tt";
-        str s ... ".png" .. @json a.number .. "haha" .. str t;
-        print str s;
-        str s regex "(/[^/]+\.png)";
-        print str s;
+        s ... ".png" .. a.number .. "haha" .. t;
+        print s;
+        s regex "(/[^/]+\.png)";
+        print s;
     }
     for (json b : json a.sub) {
-        print json b.key;
+        print b.key;
     }
 }

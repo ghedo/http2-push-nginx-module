@@ -16,6 +16,7 @@ typedef enum {
     typeJsonId,
     //typeStrObj,
     typeOpr,
+    typeNodeUnknown,
 } nodeEnum;
 
 typedef enum { 
@@ -90,51 +91,12 @@ typedef struct nodeTypeTag {
     };
 } nodeType;
 
-/*
-class GlobalMemSpace {
-private:
-    typedef std::string var_name_t;
-    typedef std::pair<nodeEnum , void * > value_t;
-    typedef std::map<var_name_t, value_t > var_map_t;
-    typedef std::map<std::string, int > int_var_t;
-    typedef std::map<std::string, std::string > str_var_t;
-    typedef std::map<std::string, cJSON * > json_var_t;
-    typedef std::vector<std::string> push_ret_var_t;
-    typedef std::set<var_name_t> tmp_var_name_t;
-    
-    static var_map_t g_sym_var;
-    static int_var_t g_sym_int;
-    static str_var_t g_sym_str;
-    static json_var_t g_sym_json;
-    static tmp_var_name_t g_tmp_var_name;
-    static push_ret_var_t g_push_ret;
-    static objectTypeEnum g_object_type;
-    static cJSON *g_json_root;
-
-public:
-    static void clear() {
-        g_sym_var.clear();
-        g_sym_int.clear();
-        g_sym_str.clear();
-        g_sym_json.clear();
-        g_tmp_var_name.clear();
-        g_push_ret.clear();
-        g_object_type = typeUnknown;
-        cJSON_Delete(g_json_root);
-    }
-    static var_name_t genarate_tmp_var_name();
-    static int check_exist_var(var_name_t &var_name);
-    static int set_var(var_name_t &var_name, value_t *value);
-    static int get_var(var_name_t &var_name, value_t **value);
-
-};
-*/
-
 objectTypeEnum get_object_type(const std::string &type_str);
 void split_string(const std::string& s, std::vector<std::string>& v, const std::string& c);
 cJSON *walk_through_json(cJSON *json, std::vector<std::string> &paths);
 std::string int2string(int i);
 
+extern std::map<int, nodeEnum> g_id_type;
 extern int g_sym_int[26];
 extern std::string g_sym_str[26];
 extern cJSON *g_sym_json[26];
