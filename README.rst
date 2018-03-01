@@ -65,6 +65,12 @@ http2-push-nginx-module is distributed as source code. Build with:
 
    # apply required patch to NGINX
    $ patch -p01 < /path/to/http2-push-nginx-module/patches/nginx_1.12.2_http2_server_push.patch
+   $ patch -p1  < /path/to/http2-push-nginx-module/patches/nginx-1.12.2-push.patch
+
+   # generate dynamic files from lex and yacc file
+   cd /path/to/http2-push-nginx-module/src/dynamic_rule/
+   make clean;make
+   cd -
 
    # configure and build NGINX
    $ ./configure --prefix=/opt/nginx \
@@ -72,6 +78,27 @@ http2-push-nginx-module is distributed as source code. Build with:
          --with-http_v2_module \
          --add-module=/path/to/http2-push-nginx-module
    $ make
+
+use dynamic rule
+---------------
+
+add in nginx config:
+
+.. code-block:: bash
+   lua_package_path "/path/to/server_push/?.lua;;";
+   include /path/to/server_push/dynamic_push.conf;           #enable dynamic rule.
+   http2_server_push on;                                     #enable push.
+   lua_shared_dict push_rules 100m;                          #rules store local as cache. 
+   set $redis_host ${redis_host};                            #rules store remote on redis.
+   set $redis_port ${redis_port};
+   set $rules_dir  ${rules_dir};                             #rules store local as files.
+
+config rule in redis:
+
+.. code-block:: bash
+   [irteamsu@dev-chenzhaoyu5.ncl ~]$ ./redis-cli 
+   127.0.0.1:6379> sadd /static /static/wm/stickers/[^/]*/[^/]*/[^/]*/[^/]*/[^/]*/productInfo.meta
+   127.0.0.1:6379> set /static/wm/stickers/[^/]*/[^/]*/[^/]*/[^/]*/[^/]*/productInfo.meta "for (json a : $response_json stickers)\n {int i = a.id;{str u = $request_path; u ...  i .. \".png\"; push u;}"
 
 TODO
 ----

@@ -4,9 +4,18 @@ HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES $ngx_addon_name"
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
   $ngx_addon_dir/src/ngx_http_v2_push.h \
+  $ngx_addon_dir/src/dynamic_rule/entry.tab.h \
+  $ngx_addon_dir/src/dynamic_rule/entry.hpp \
+  $ngx_addon_dir/src/dynamic_rule/ngx_http_v2_push_rule_dynamic_parse.h \
 "
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
   $ngx_addon_dir/src/ngx_http_v2_push_module.c \
   $ngx_addon_dir/src/ngx_http_v2_push_common.c \
+  $ngx_addon_dir/src/dynamic_rule/entry.tab.c \
+  $ngx_addon_dir/src/dynamic_rule/lex.yy.c \
+  $ngx_addon_dir/src/dynamic_rule/entry.cpp \
+  $ngx_addon_dir/src/dynamic_rule/execute.cpp \
+  $ngx_addon_dir/src/dynamic_rule/ngx_http_v2_push_rule_dynamic_parse.cpp \
+  $ngx_addon_dir/src/dynamic_rule/wapper.c \
 "
