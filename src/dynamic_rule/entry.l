@@ -7,14 +7,11 @@ int yywrap(void);
 int yylex(void);
 }
 %}
-%x _INT_
 %x _INT_VAR_BEGIN_
-%x _STR_
 %x _STR_VAR_BEGIN_
 %x _STR_CON_BEGIN_
-%x _JSON_VAR_
+%x _STR_CON_END_
 %x _JSON_VAR_BEGIN_
-%x _JSON_CON_
 %x _JSON_CON_BEGIN_
 %x _COMMENT_
 
@@ -28,7 +25,7 @@ int yylex(void);
     BEGIN INITIAL;
 }
 
-<_COMMENT_>. {
+<_COMMENT_>[^\n]+ {
 }
 
 <INITIAL>\" {
@@ -37,10 +34,15 @@ int yylex(void);
     return STR_CON_BEGIN;
 }
 
-<_STR_CON_BEGIN_>[^"]+\" {
-    BEGIN  INITIAL;
+<_STR_CON_BEGIN_>[^"]+ {
+    BEGIN  _STR_CON_END_;
     yylval.s_entry = yytext;
     return STR;
+}
+
+<_STR_CON_END_>\" {
+    BEGIN  INITIAL;
+    return STR_CON_END;
 }
 
 json {
@@ -55,7 +57,15 @@ json {
     return JSON_VARIABLE;
 }
 
-$json_root {
+$request_url {
+    return REQUEST_URL;
+}
+
+$request_path {
+    return REQUEST_PATH;
+}
+
+$response_json {
     BEGIN _JSON_CON_BEGIN_;
     yylval.clear();
     return JSON_CON_BEGIN;

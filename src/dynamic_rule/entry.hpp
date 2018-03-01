@@ -14,7 +14,6 @@ typedef enum {
     typeIntId, 
     typeStrId, 
     typeJsonId,
-    //typeStrObj,
     typeOpr,
     typeNodeUnknown,
 } nodeEnum;
@@ -28,7 +27,6 @@ typedef enum {
 
 typedef struct nodeTypeTag nodeType;
 
-/*  */
 struct entry_t {
     std::string s_entry;
     int         i_entry;
@@ -36,6 +34,7 @@ struct entry_t {
     void clear();
 };
 
+/* parse return object */
 #define YYSTYPE entry_t
 
 /* int constants */
@@ -83,10 +82,10 @@ typedef struct nodeTypeTag {
     union {
         intConNodeType con_int; /* int constants */
         strConNodeType con_str; /* string constants */
+        jsonConNodeType con_json; /* json constants */
         intIdNodeType int_id; /* int identifiers */
-        jsonConNodeType con_json;
-        jsonIdNodeType json_id;
         strIdNodeType str_id; /* string identifiers */
+        jsonIdNodeType json_id; /* json identifiers */
         oprNodeType opr; /* operators */
     };
 } nodeType;
@@ -101,6 +100,9 @@ extern int g_sym_int[26];
 extern std::string g_sym_str[26];
 extern cJSON *g_sym_json[26];
 extern std::string g_buf_str, g_append_str;
+extern std::string g_request_url, g_request_path;
+typedef struct ngx_http_request_s ngx_http_request_t;
+extern ngx_http_request_t *g_request;
 extern objectTypeEnum g_object_type;
 extern cJSON *g_json_root;
 extern std::set<std::string> g_push_ret;

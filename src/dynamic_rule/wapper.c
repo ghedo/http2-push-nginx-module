@@ -21,15 +21,16 @@ const char *g_test_json = "{ \
 	}\
 }";
 
-void push_rule_dynamic_parse_wapper(const char *type,
+int push_rule_dynamic_parse_wapper(const char *type,
 			 const char *rule_file_path,
-			 const char *body) {
-    push_rule_dynamic_parse(type, rule_file_path, body);
+			 const char *body,
+                         ngx_http_request_t *request) {
+    return push_rule_dynamic_parse(type, rule_file_path, body, request);
 }
-int main (void) {
-   push_rule_dynamic_parse_wapper("json",
-			    "file.txt",
-      g_test_json);
-    return 0;
-
-}
+//int main (void) {
+//   push_rule_dynamic_parse_wapper("json",
+//			    "file.txt",
+//     g_test_json);
+//    return 0;
+//
+//}

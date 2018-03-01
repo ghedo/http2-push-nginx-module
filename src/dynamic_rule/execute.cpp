@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include "entry.hpp"
 #include "entry.tab.h"
+extern "C" {
+#include <ngx_core.h>
+#include <ngx_http.h>
+}
 
 static cJSON *get_cjson_from_node(nodeType *p);
 static std::string node2_str(nodeType *p);
@@ -14,7 +18,7 @@ static std::string jsonode2_str(nodeType *p);
 static int jsonode2_int(nodeType *p);
 static int regex_replace(std::string &source_str, const std::string &partten_str);
 
-int ex(nodeType *p, std::string *str_ret = NULL) {
+int ex(nodeType *p) {
     std::string ret;
     if (!p) return 0;
     switch(p->type) {
@@ -32,14 +36,15 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
         case typeOpr:
             switch(p->opr.oper) {
                 case WHILE: 
-                    while(ex(p->opr.op[0])) 
+                    while(ex(p->opr.op[0])) {
                         ex(p->opr.op[1]);
+                    }
                     return 0;
                 case FOR: 
                     if (p->opr.op[0]->type == typeJsonId) {
                         cJSON *json = get_cjson_from_node(p->opr.op[1]);
                         if (json == NULL) {
-                            std::cout << "json for iter error";
+                            std::cout << "json for iter error" << std::endl;
                             return 0;
                         }
                         int count = cJSON_GetArraySize(json);
@@ -59,8 +64,6 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                         ex(p->opr.op[2]);
                     return 0;
                 case PUSH: 
-                case PRINT: 
-                    std::cout << "in" << std::endl;
                     if (p->opr.op[0]->type == typeIntId) {
                         std::cout << ex(p->opr.op[0]) << std::endl;
                         ret = int2string(ex(p->opr.op[0]));
@@ -68,11 +71,9 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                         std::cout << g_sym_str[p->opr.op[0]->str_id.i] << std::endl;
                         ret = g_sym_str[p->opr.op[0]->str_id.i];
                     } else if (p->opr.op[0]->type == typeStrCon) {
-                        std::cout << "inhhh" << std::endl;
                         std::cout << p->opr.op[0]->con_str.p_value->c_str() << std::endl;
                         ret = p->opr.op[0]->con_str.p_value->c_str();
                     } else if (p->opr.op[0]->type == typeJsonId){
-                        std::cout << "in2" << std::endl;
                         std::cout << jsonode2_str(p->opr.op[0]) << std::endl;
                         ret = jsonode2_str(p->opr.op[0]);
                     } else if (p->opr.op[0]->type == typeJsonCon) {
@@ -85,6 +86,31 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                     if (!ret.empty()) {
                         g_push_ret.insert(ret);
                     }
+                case PRINT: 
+                    if (p->opr.op[0]->type == typeIntId) {
+                        std::cout << ex(p->opr.op[0]) << std::endl;
+                        ret = int2string(ex(p->opr.op[0]));
+                    } else if (p->opr.op[0]->type == typeStrId) {
+                        std::cout << g_sym_str[p->opr.op[0]->str_id.i] << std::endl;
+                        ret = g_sym_str[p->opr.op[0]->str_id.i];
+                    } else if (p->opr.op[0]->type == typeStrCon) {
+                        std::cout << p->opr.op[0]->con_str.p_value->c_str() << std::endl;
+                        ret = p->opr.op[0]->con_str.p_value->c_str();
+                    } else if (p->opr.op[0]->type == typeJsonId){
+                        std::cout << jsonode2_str(p->opr.op[0]) << std::endl;
+                        ret = jsonode2_str(p->opr.op[0]);
+                    } else if (p->opr.op[0]->type == typeJsonCon) {
+                        std::cout << jsonode2_str(p->opr.op[0]) << std::endl;
+                        ret = jsonode2_str(p->opr.op[0]);
+                    } else if (p->opr.op[0]->type == typeIntCon) {
+                        std::cout << ex(p->opr.op[0]) << std::endl;
+                        ret = int2string(ex(p->opr.op[0]));
+                    }
+                    ngx_str_t tmp;
+                    tmp.data = (u_char *)(ret.c_str());
+                    tmp.len = ret.length();
+                    ngx_log_error(NGX_LOG_INFO, g_request->connection->log, 0,
+                      "dynamic_push log print: \"%V\"", &tmp);
                     return 0;
                 case PARSE_JSON:
                     if (p->opr.op[1]->type == typeJsonId || 
@@ -107,14 +133,15 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                     else if (p->opr.op[0]->type == typeStrId) {
                         ex(p->opr.op[1]);
                         g_sym_str[p->opr.op[0]->str_id.i] = g_buf_str;
+                        return 0; }
+                    else if (p->opr.op[0]->type == typeJsonId) {
+                        g_sym_json[p->opr.op[0]->json_id.i] = get_cjson_from_node(p->opr.op[1]);
                         return 0;
                     } else {
-
                     }
                 case UMINUS: 
                     return -ex(p->opr.op[0]);
                 case '+': 
-                    std::cout << "+" << std::endl;
                     return ex(p->opr.op[0]) + ex(p->opr.op[1]);
                 case '-': 
                     return ex(p->opr.op[0]) - ex(p->opr.op[1]);
@@ -135,22 +162,18 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                 case EQ: 
                     return ex(p->opr.op[0]) == ex(p->opr.op[1]);
                 case STR_APPEND:
-                    std::cout << "STR_APPEND" << std::endl;
                     if (p->opr.op[0]->type == typeOpr) {
                         ex(p->opr.op[0]);
                     } else {
                         g_append_str.append(node2_str(p->opr.op[0]));
                     }
-                                        
                     if (p->opr.op[1]->type == typeOpr) {
                         ex(p->opr.op[1]);
                     } else {
                         g_append_str.append(node2_str(p->opr.op[1]));
                     }
-
                     return 0;
                 case '~':
-                    std::cout << "STR_APPEND_END" << std::endl;
                     if (p->opr.op[1]->type == typeOpr) {
                         ex(p->opr.op[1]);
                     }
@@ -164,7 +187,6 @@ int ex(nodeType *p, std::string *str_ret = NULL) {
                 case REGEX:
                     regex_replace(g_sym_str[p->opr.op[0]->str_id.i], node2_str(p->opr.op[1]));
                     return 0;
-   
             }
     }
     return 0;
@@ -218,12 +240,10 @@ static std::string jsonode2_str(nodeType *p) {
     if (cjson == NULL || cjson->valuestring == NULL) {
         return "";
     }
-    
     return cjson->valuestring;
 }
 
 static int jsonode2_int(nodeType *p) {
-    std::cout << "jsonode2_int";
     cJSON *cjson = get_cjson_from_node(p);
     if (cjson == NULL) {
         return 0;
@@ -251,10 +271,8 @@ static int regex_replace(std::string &source_str, const std::string &partten_str
         {  
             memset(str,sizeof(str),0);  
             cnt=regmatch[i].rm_eo-regmatch[i].rm_so;  
-            printf("cnt=%d \t",cnt);  
             memcpy(str,&source[regmatch[i].rm_so],cnt);  
             str[cnt]='\0';  
-            printf("%s\n",str);  
             source_str = str;
         }  
   

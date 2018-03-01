@@ -1,7 +1,7 @@
-int o = 1+2*3;
-print o;
 print 123456;
 print "in111";
+json z = $json_root;
+print message;
 for (json a : $json_root recentMessage.messageList) {
     print "in222";
     if (a.messageTypeCode == 18) {

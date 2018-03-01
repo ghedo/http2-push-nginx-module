@@ -17,13 +17,16 @@ void freeNode(nodeType *p);
 extern int yylex(void);
 void yyerror(const char *s);
 }
-int ex(nodeType *p, std::string *str_ret = NULL);
+int ex(nodeType *p);
 
 std::map<int, nodeEnum> g_id_type;
 int g_sym_int[26];
 std::string g_sym_str[26];
 cJSON *g_sym_json[26];
 std::string g_buf_str, g_append_str;
+std::string g_request_url, g_request_path;
+typedef struct ngx_http_request_s ngx_http_request_t;
+ngx_http_request_t *g_request;
 objectTypeEnum g_object_type;
 cJSON *g_json_root;
 std::set<std::string> g_push_ret;
@@ -33,17 +36,13 @@ std::set<std::string> g_push_ret;
 %token<s_entry> STR
 %token<s_entry> JSON_CON
 %token<s_entry> OBJECT_TYPE
-%token<s_entry> INT_JSON_BEGIN
 %token<i_entry> INT_VARIABLE
 %token<i_entry> STR_VARIABLE 
 %token<s_entry> JSON_VARIABLE 
 %token<s_entry> VARIABLE 
-%token<s_entry> INT_VAR_BEGIN 
-%token<s_entry> STR_VAR_BEGIN
-%token<s_entry> STR_CON_BEGIN
-%token<s_entry> JSON_VAR_BEGIN
-%token<s_entry> JSON_CON_BEGIN
+%token STR_CON_BEGIN STR_CON_END JSON_VAR_BEGIN INT_VAR_BEGIN STR_VAR_BEGIN JSON_CON_BEGIN
 %token WHILE IF FOR PRINT PUSH PARSE_JSON
+%token REQUEST_URL REQUEST_PATH
 %nonassoc IFX
 %nonassoc ELSE
 %left '.'
@@ -73,6 +72,7 @@ stmt:
 | JSON_VAR_BEGIN JSON_VARIABLE '=' PARSE_JSON expr ';' { $$ = opr(PARSE_JSON, 2, id_json($2), $5); }
 | INT_VAR_BEGIN INT_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_int($2), $4); }
 | STR_VAR_BEGIN STR_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_str($2), $4); }
+| JSON_VAR_BEGIN JSON_VARIABLE '=' expr ';' { $$ = opr('=', 2, id_json($2), $4); }
 | VARIABLE STR_APPEND_END expr ';'{ $$ = opr('~', 2, id_var($1), $3); }
 | VARIABLE REGEX expr ';'{ $$ = opr(REGEX, 2, id_var($1), $3); }
 | WHILE '(' expr ')' stmt { $$ = opr(WHILE, 2, $3, $5); }
@@ -89,9 +89,11 @@ stmt { $$ = $1; }
 
 expr:
 INT { $$ = con_int($1); }
-|STR_CON_BEGIN STR {$$ = con_str($2);}
+|STR_CON_BEGIN STR STR_CON_END {$$ = con_str($2);}
 | JSON_CON_BEGIN JSON_CON {$$ = con_json($2);}
 | VARIABLE { $$ = id_var($1); }
+| REQUEST_URL { $$ = con_str(g_request_url); }
+| REQUEST_PATH { $$ = con_str(g_request_path); }
 | JSON_VAR_BEGIN JSON_VARIABLE { $$ = id_json($2); }
 | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
 | expr '+' expr { $$ = opr('+', 2, $1, $3); }
@@ -111,12 +113,15 @@ INT { $$ = con_int($1); }
 %%
 
 #define SIZEOF_NODETYPE ((char *)&p->con_int - (char *)p)
+
 nodeType *con_int(int value) {
-    nodeType *p;size_t nodeSize;
+    nodeType *p;
+    size_t nodeSize;
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(intConNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeIntCon;
     p->con_int.value = value;
@@ -124,33 +129,39 @@ nodeType *con_int(int value) {
 }
 
 nodeType *con_str(std::string &sValue) {
-    nodeType *p;size_t nodeSize;
+    nodeType *p;
+    size_t nodeSize;
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(strConNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeStrCon;
-    p->con_str.p_value = new std::string(sValue.begin(), sValue.end() - 1);
-    if (p->con_str.p_value == NULL)
+    p->con_str.p_value = new std::string(sValue);
+    if (p->con_str.p_value == NULL) {
         yyerror("out of memory");
+    }
     return p;
 }
 
 nodeType *con_json(std::string &sValue) {
-    nodeType *p;size_t nodeSize;
+    nodeType *p;
+    size_t nodeSize;
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(jsonConNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeJsonCon;
     std::vector<std::string> split_ret;
     split_string(sValue, split_ret, ".");
 
     p->con_json.cjson = walk_through_json(g_json_root, split_ret);
-    if (p->con_json.cjson == NULL)
+    if (p->con_json.cjson == NULL) {
         yyerror("json walk error");
+    }
     return p;
 }
 
@@ -167,8 +178,9 @@ static nodeType *create_int_id_node(int i) {
     size_t nodeSize;
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(intIdNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeIntId;
     p->int_id.i = i;
@@ -180,8 +192,9 @@ static nodeType *create_str_id_node(int i) {
     size_t nodeSize;
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(strIdNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeStrId;
     p->str_id.i = i;
@@ -196,8 +209,9 @@ static nodeType *create_json_id_node(std::string &sValue) {
     }
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(jsonIdNodeType);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
         yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeJsonId;
     p->json_id.i = (char)(*sValue.begin()) - 'a';
@@ -222,7 +236,6 @@ nodeType *id_var(std::string &sValue) {
         p = create_int_id_node(i);
     } else if (node_type == typeStrId) {
         p = create_str_id_node(i);
-
     } else if (node_type == typeJsonId) {
         p = create_json_id_node(sValue);
     }
@@ -258,15 +271,17 @@ nodeType *opr(int oper, int nops, ...) {
     /* allocate node */
     nodeSize = SIZEOF_NODETYPE + sizeof(oprNodeType) +
                (nops - 1) * sizeof(nodeType*);
-    if ((p = (nodeType *)malloc(nodeSize)) == NULL)
-    yyerror("out of memory");
+    if ((p = (nodeType *)malloc(nodeSize)) == NULL) {
+        yyerror("out of memory");
+    }
     /* copy information */
     p->type = typeOpr;
     p->opr.oper = oper;
     p->opr.nops = nops;
     va_start(ap, nops);
-    for (i = 0; i < nops; i++)
+    for (i = 0; i < nops; i++) {
         p->opr.op[i] = va_arg(ap, nodeType*);
+    }
     va_end(ap);
     return p;
 }
@@ -276,6 +291,8 @@ void freeNode(nodeType *p) {
     if (!p) return;
     if (p->type == typeStrCon) {
         delete p->con_str.p_value;
+    } else if (p->type == typeJsonId && p->json_id.path != NULL) {
+        delete p->json_id.path;
     }
     if (p->type == typeOpr) {
         for (i = 0; i < p->opr.nops; i++)
@@ -287,26 +304,3 @@ void freeNode(nodeType *p) {
 void yyerror(const char *s) {
     fprintf(stdout, "%s\n", s);
 }
-
-/*
-int main(void) {
-    #if YYDEBUG
-    yydebug = 1;
-    #endif
-    set_g_json();
-    const char* sFile="file.txt";
-    FILE* fp=fopen(sFile, "r");  
-    if(fp==NULL)  
-    {  
-        printf("cannot open %s\n", sFile);  
-        return -1;  
-    } 
-    extern FILE* yyin;
-    yyin=fp;
-    printf("-----begin parsing %s\n", sFile); 
-    yyparse();
-    puts("-----end parsing");  
-    fclose(fp);  
-    return 0;
-}
-*/
